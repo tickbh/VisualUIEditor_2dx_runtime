@@ -82,11 +82,13 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         node = cc.LabelTTF:create()
     elseif data.type == "Input" then
         data.spriteBg = data.spriteBg or ""
+        local width = data.width or 100
+        local height = data.height or 20
         local frame = GetSpriteFrameForName(data.spriteBg)
         if not frame then
-            node = ccui.EditBox:create(cc.size(100, 20),  ccui.Scale9Sprite:create())
+            node = ccui.EditBox:create(cc.size(width, height),  ccui.Scale9Sprite:create())
         else
-            node = ccui.EditBox:create(cc.size(100, 20),  data.spriteBg, 1)
+            node = ccui.EditBox:create(cc.size(width, height),  data.spriteBg, 1)
         end
 
         AddTouchEvent(node, node.onEditHandler, controlNode, controlNode.eventListener, data.touchListener)
@@ -142,8 +144,8 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
     local _ = data.top and parent and node:setPositionY(parent.getContentSize().height - tonumber(data.top))
 
     if data.anchorX or data.anchorY then
-        local anchorX = tonumber(data.anchorX) or node.getAnchorPoint().x
-        local anchorY = tonumber(data.anchorY) or node.getAnchorPoint().y
+        local anchorX = tonumber(data.anchorX) or node:getAnchorPoint().x
+        local anchorY = tonumber(data.anchorY) or node:getAnchorPoint().y
         node:setAnchorPoint(anchorX, anchorY)
     end
 
@@ -187,12 +189,6 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         local _ = data.inputFlag and node:setInputFlag(data.inputFlag)
         local _ = data.inputMode and node:setInputMode(data.inputMode)
         local _ = data.returnType and node:setReturnType(data.returnType)
-
-        -- SetNodeSpriteFrame(data.spriteBg, node, function(node, frame)
-        --         local x, y = node:getPosition()
-        --         node:initWithSizeAndBackgroundSprite(node:getContentSize(), cc.Scale9Sprite:createWithSpriteFrame(frame))
-        --         node:setPosition(x, y)
-        --     end)
     elseif data.type == "Sprite" then
         SetNodeSpriteFrame(data.spriteFrame, node, node.setSpriteFrame)
 
@@ -219,6 +215,8 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         SetNodeBySpriteFrameName(data.barSelectBall, node, node.loadSlidBallTexturePressed)
         SetNodeBySpriteFrameName(data.barDisableBall, node, node.loadSlidBallTextureDisabled)
     elseif data.type == "Button" then
+        local _ = data.scale9Enable and node:setScale9Enabled(data.scale9Enable)
+
         SetNodeBySpriteFrameName(data.bgNormal, node, node.loadTextureNormal)
         SetNodeBySpriteFrameName(data.bgSelect, node, node.loadTexturePressed)
         SetNodeBySpriteFrameName(data.bgDisable, node, node.loadTextureDisabled)

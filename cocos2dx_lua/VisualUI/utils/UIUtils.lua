@@ -117,10 +117,11 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         node = ccui.Scale9Sprite:create()
     elseif data.type == "LabelTTF" then
         node = cc.LabelTTF:create()
+    elseif data.type == "LabelAtlas" then
+        node = cc.LabelAtlas:create()
     elseif data.type == "Input" then
         data.spriteBg = data.spriteBg or ""
         local width = CalcWidth(node, data.width, parent)
-        trace("width = %o", width)
         local height = CalcHeight(node, data.height, parent)
         local frame = GetSpriteFrameForName(data.spriteBg)
         if not frame then
@@ -168,7 +169,6 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
     if data.width or data.height then
         local setFn = node.setPreferredSize or node.setContentSize
         local width = CalcWidth(node, data.width, parent)
-        trace("width = %o", width)
         local height = CalcHeight(node, data.height, parent) tonumber(data.height)
         setFn(node, cc.size(width, height))
     end
@@ -181,6 +181,10 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
 
     local _ = data.bottom and node:setPositionY(tonumber(data.bottom))
     local _ = data.top and parent and node:setPositionY(parent:getContentSize().height - tonumber(data.top))
+
+
+    local _ = data.horizontal and parent and node:setPositionX(parent:getContentSize().width / 2 + tonumber(data.horizontal))
+    local _ = data.vertical and parent and node:setPositionY(parent:getContentSize().height / 2 + tonumber(data.vertical))
 
     if data.anchorX or data.anchorY then
         local anchorX = tonumber(data.anchorX) or node:getAnchorPoint().x
@@ -274,6 +278,16 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
 
         local _ = data.select and node:setSelected(data.select)
         local _ = data.enable and node:setTouchEnabled(data.enable)
+    elseif data.type == "LabelAtlas" then
+        if data.charMapFile and cc.FileUtils:getInstance():isFileExist(data.charMapFile) then
+            local mapStar = string.byte('0')
+            if type(data.mapStartChar) == "number" then
+                mapStar = data.mapStartChar
+            else
+                mapStar = string.byte(data.mapStartChar)
+            end
+            node:initWithString(data.string, data.charMapFile, data.itemWidth, data.itemHeight, mapStar)
+        end
     end
 
 

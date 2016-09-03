@@ -3,19 +3,20 @@ module("UIDataUtils", package.seeall)
 
 local CacheDataTable = {}
 
-function GetJsonDataFromUI(name)
-    dump(name)
+function GetJsonDataFromUI(name, fullpath)
     if CacheDataTable[name] then
         return CacheDataTable[name]
     end
 
-    local filePath = cc.FileUtils:getInstance():fullPathForFilename(name)
-    dump(filePath)
+    local filePath = name
+    if fullpath and string.len(fullpath) > 0 then
+        filePath = fullpath
+    end
+
     local content = cc.FileUtils:getInstance():getStringFromFile(filePath)
     if not content or string.len(content) == 0 then
         return nil
     end
-    dump(content)
     local success, ret = pcall(cjson.decode, content)
     if type(ret) ~= "table" then
         success = false

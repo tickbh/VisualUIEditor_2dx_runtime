@@ -116,6 +116,8 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 		node = cocos2d::ui::Scale9Sprite::create();
 	} else if (type == "LabelTTF") {
 		node = cocos2d::LabelTTF::create();
+	} else if (type == "LabelAtlas") {
+		node = cocos2d::LabelAtlas::create();
 	} else if (type == "Input") {
 		auto spriteBg = data["spriteBg"].asString();
 		auto frame = GetSpriteFrameForName(spriteBg);
@@ -190,6 +192,9 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 	if (data["right"].isInt() && parent) { node->setPositionX(parent->getContentSize().width - data["right"].asInt()); };
 	if (data["bottom"].isInt()) { node->setPositionY(data["bottom"].asInt()); };
 	if (data["top"].isInt() && parent) { node->setPositionY(parent->getContentSize().height - data["top"].asInt()); };
+
+	if (data["horizontal"].isInt() && parent) { node->setPositionX(parent->getContentSize().width / 2 + data["horizontal"].asInt()); };
+	if (data["vertical"].isInt() && parent) { node->setPositionY(parent->getContentSize().height / 2 + data["vertical"].asInt()); };
 
 	if (data["anchorX"].isDouble() || data["anchorY"].isDouble()) {
 		auto anchorX = data["anchorX"].isDouble() ? data["anchorX"].asDouble() : node->getAnchorPoint().x;
@@ -328,6 +333,18 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 		SetNodeBySpriteFrameName(data["activeDisable"].asString(), [=](const std::string& fileName, cocos2d::ui::Widget::TextureResType resType) {
 			opnode->loadTextureFrontCrossDisabled(fileName, resType);
 		});
+	}
+	else if (type == "LabelAtlas") {
+		auto opnode = dynamic_cast<cocos2d::LabelAtlas*>(node);
+		if (data["charMapFile"].isString() && cocos2d::FileUtils::getInstance()->isFileExist(data["charMapFile"].asString())) {
+			int mapStar = '0';
+			if (data["mapStartChar"].isInt()) {
+				mapStar = data["mapStartChar"].asInt();
+			} else {
+				mapStar += atoi(data["mapStartChar"].asString().c_str());
+			}
+			opnode->initWithString(data["string"].asString(), data["charMapFile"].asString(), data["itemWidth"].asInt(), data["itemHeight"].asInt(), mapStar);
+		}
 	}
 
 	if (data["children"].isArray()) {

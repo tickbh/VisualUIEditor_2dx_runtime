@@ -237,9 +237,9 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         local _ = data.fontSize and node:setFontSize(data.fontSize)
         local _ = data.fontName and node:setFontName(data.fontName)
         color = CovertToColor(data.outlineColor)
-        local _ = color and node:enableOutline(color, data.outlineSize || 1)
+        local _ = color and node:enableOutline(color, data.outlineSize or 1)
         if data.boundingWidth or data.boundingHeight then
-            node:setTextAreaSize(cc.size(data.boundingWidth || 0, data.boundingHeight || 0))
+            node:setTextAreaSize(cc.size(data.boundingWidth or 0, data.boundingHeight or 0))
         end
     elseif data.type == "UIInput" then
 

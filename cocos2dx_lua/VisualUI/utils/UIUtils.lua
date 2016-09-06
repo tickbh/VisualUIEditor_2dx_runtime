@@ -111,34 +111,34 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
             temple = UILayer
         end
         node = temple:create(data.path, parent)
-    elseif data.type == "Sprite" then
-        node = cc.Sprite:create()
-    elseif data.type == "Scale9" then
+    elseif data.type == "UIImage" then
+        node = ccui.ImageView:create()
+    elseif data.type == "UIScale9" then
         node = ccui.Scale9Sprite:create()
-    elseif data.type == "LabelTTF" then
-        node = cc.LabelTTF:create()
-    elseif data.type == "LabelAtlas" then
-        node = cc.LabelAtlas:create()
-    elseif data.type == "Input" then
-        data.spriteBg = data.spriteBg or ""
+    elseif data.type == "UIText" then
+        node = ccui.Text:create()
+    elseif data.type == "UITextAtlas" then
+        node = ccui.TextAtlas:create()
+    elseif data.type == "UIInput" then
+        data.spriteFrame = data.spriteFrame or ""
         local width = CalcWidth(node, data.width, parent)
         local height = CalcHeight(node, data.height, parent)
-        local frame = GetSpriteFrameForName(data.spriteBg)
+        local frame = GetSpriteFrameForName(data.spriteFrame)
         if not frame then
             node = ccui.EditBox:create(cc.size(width, height),  ccui.Scale9Sprite:create())
         else
-            node = ccui.EditBox:create(cc.size(width, height),  data.spriteBg, 1)
+            node = ccui.EditBox:create(cc.size(width, height),  data.spriteFrame, 1)
         end
 
         AddTouchEvent(node, node.onEditHandler, controlNode, controlNode.eventListener, data.touchListener)
         node:setFontSize(14)
-    elseif data.type == "Slider" then
+    elseif data.type == "UISlider" then
         node = ccui.Slider:create()
         AddTouchEvent(node, node.onEvent, controlNode, controlNode.eventListener, data.touchListener)
-    elseif data.type == "CheckBox" then
+    elseif data.type == "UICheckBox" then
         node = ccui.CheckBox:create()
         AddTouchEvent(node, node.onEvent, controlNode, controlNode.eventListener, data.touchListener)
-    elseif data.type == "Button" then
+    elseif data.type == "UIButton" then
         node = ccui.Button:create()
         local func = function(node, callback) 
             node:addTouchEventListener(function(sender, eventType)
@@ -158,13 +158,22 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         end
         AddTouchEvent(node, func, controlNode, controlNode.eventListener, data.touchListener)
     else
-        node = cc.Node:create()
+        node = ccui.Widget:create()
     end
 
     if type(data.touchEnabled) == "boolean" and node.setTouchEnabled then
         node:setTouchEnabled(data.touchEnabled)
     end
- 
+    
+    if data.id then
+        node:setName(data.id)
+        if controlNode then
+            if controlNode[data.id] then
+                print("WAINING!!! You have same tag name(" .. data.id .. ") node")
+            end
+            controlNode[data.id] = node
+        end
+    end
     local _ = data.id and node:setName(data.id)
     if data.width or data.height then
         local setFn = node.setPreferredSize or node.setContentSize
@@ -173,18 +182,33 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         setFn(node, cc.size(width, height))
     end
 
+    if data.autoLayout then
+        if parent and node ~= parent then
+            node:setContentSize(parent:getContentSize())
+        else
+            node:setContentSize(cc.Director:getInstance():getWinSize())
+        end
+    end
+
     local _ = data.x and node:setPositionX(tonumber(data.x))
     local _ = data.y and node:setPositionY(tonumber(data.y))
 
+    
+    local function calcCompareWidth(node, parent)
+        return parent and parent:getContentSize().width or node:getContentSize().width
+    end
+
+    local function calcCompareHeight(node, parent)
+        return parent and parent:getContentSize().height or node:getContentSize().height
+    end
+
     local _ = data.left and node:setPositionX(tonumber(data.left))
-    local _ = data.right and parent and node:setPositionX(parent:getContentSize().width - tonumber(data.right))
-
+    local _ = data.right and node:setPositionX(calcCompareWidth(node, parent) - tonumber(data.right))
     local _ = data.bottom and node:setPositionY(tonumber(data.bottom))
-    local _ = data.top and parent and node:setPositionY(parent:getContentSize().height - tonumber(data.top))
+    local _ = data.top and node:setPositionY(calcCompareHeight(node, parent) - tonumber(data.top))
 
-
-    local _ = data.horizontal and parent and node:setPositionX(parent:getContentSize().width / 2 + tonumber(data.horizontal))
-    local _ = data.vertical and parent and node:setPositionY(parent:getContentSize().height / 2 + tonumber(data.vertical))
+    local _ = data.horizontal and node:setPositionX(calcCompareWidth(node, parent) / 2 + tonumber(data.horizontal))
+    local _ = data.vertical and node:setPositionY(calcCompareHeight(node, parent) / 2 + tonumber(data.vertical))
 
     if data.anchorX or data.anchorY then
         local anchorX = tonumber(data.anchorX) or node:getAnchorPoint().x
@@ -206,10 +230,10 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         node:setColor(color)
     end
 
-    if data.type == "LabelTTF" then
+    if data.type == "UIText" then
         local _ = data.string and node:setString(data.string)
-        local _ = data.textAlign and node:setHorizontalAlignment(data.textAlign)
-        local _ = data.verticalAlign and node:setVerticalAlignment(data.verticalAlign)
+        local _ = data.textAlign and node:setTextHorizontalAlignment(data.textAlign)
+        local _ = data.verticalAlign and node:setTextVerticalAlignment(data.verticalAlign)
         local _ = data.fontSize and node:setFontSize(data.fontSize)
         local _ = data.fontName and node:setFontName(data.fontName)
         local _ = data.string and node:setString(data.string)
@@ -218,7 +242,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         -- color = CovertToColor(data.strokeStyle)
         -- local _ = color and node:setFontFillColor(color, true)
 
-    elseif data.type == "Input" then
+    elseif data.type == "UIInput" then
 
         local _ = data.string and node:setText(data.string)
         local _ = data.fontSize and node:setFontSize(data.fontSize)
@@ -232,12 +256,12 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         local _ = data.inputFlag and node:setInputFlag(data.inputFlag)
         local _ = data.inputMode and node:setInputMode(data.inputMode)
         local _ = data.returnType and node:setReturnType(data.returnType)
-    elseif data.type == "Sprite" then
-        SetNodeSpriteFrame(data.spriteFrame, node, node.setSpriteFrame)
+    elseif data.type == "UIImage" then
+        SetNodeBySpriteFrameName(data.spriteFrame, node, node.loadTexture)
 
         local _ = data.blendSrc and node:setBlendFunc({src=data.blendSrc, dst=node:getBlendFunc().dst})
         local _ = data.blendDst and node:setBlendFunc({src=node:getBlendFunc().src, dst=data.blendDst})
-    elseif data.type == "Scale9" then
+    elseif data.type == "UIScale9" then
         if data.spriteFrame then
             local size = node:getContentSize()
             SetNodeSpriteFrame(data.spriteFrame, node, node.initWithSpriteFrame)
@@ -249,7 +273,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
 --         data.insetTop && (node.insetTop = data.insetTop);
 --         data.insetRight && (node.insetRight = data.insetRight);
 --         data.insetBottom && (node.insetBottom = data.insetBottom);
-    elseif data.type == "Slider" then
+    elseif data.type == "UISlider" then
         local _ = data.percent and node:setPercent(data.percent)
         
         SetNodeBySpriteFrameName(data.barBg, node, node.loadBarTexture)
@@ -257,7 +281,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         SetNodeBySpriteFrameName(data.barNormalBall, node, node.loadSlidBallTextureNormal)
         SetNodeBySpriteFrameName(data.barSelectBall, node, node.loadSlidBallTexturePressed)
         SetNodeBySpriteFrameName(data.barDisableBall, node, node.loadSlidBallTextureDisabled)
-    elseif data.type == "Button" then
+    elseif data.type == "UIButton" then
         local _ = data.scale9Enable and node:setScale9Enabled(data.scale9Enable)
 
         SetNodeBySpriteFrameName(data.bgNormal, node, node.loadTextureNormal)
@@ -269,7 +293,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         local _ = data.fontName and node:setTitleFontName(data.fontName)
         color = CovertToColor(data.fontColor)
         local _ = color and node:setTitleColor(color)
-    elseif data.type == "CheckBox" then
+    elseif data.type == "UICheckBox" then
         SetNodeBySpriteFrameName(data.back, node, node.loadTextureBackGround)
         SetNodeBySpriteFrameName(data.backSelect, node, node.loadTextureBackGroundSelected)
         SetNodeBySpriteFrameName(data.active, node, node.loadTextureFrontCross)
@@ -278,7 +302,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
 
         local _ = data.select and node:setSelected(data.select)
         local _ = data.enable and node:setTouchEnabled(data.enable)
-    elseif data.type == "LabelAtlas" then
+    elseif data.type == "UITextAtlas" then
         if data.charMapFile and cc.FileUtils:getInstance():isFileExist(data.charMapFile) then
             local mapStar = string.byte('0')
             if type(data.mapStartChar) == "number" then
@@ -286,7 +310,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
             else
                 mapStar = string.byte(data.mapStartChar)
             end
-            node:initWithString(data.string, data.charMapFile, data.itemWidth, data.itemHeight, mapStar)
+            node:setProperty(data.string, data.charMapFile, data.itemWidth, data.itemHeight, mapStar)
         end
     end
 

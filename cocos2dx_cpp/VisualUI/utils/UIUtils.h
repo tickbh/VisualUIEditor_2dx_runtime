@@ -19,6 +19,7 @@ public:
 	static bool CheckPathRepeat(cocos2d::Node* node, std::string path);
 	static Json::Value& GetCurJsonData(std::string path);
 	static cocos2d::Color3B CovertToColor(Json::Value& value, bool* isSuccess);
+	static cocos2d::Color4B CovertToColor4(Json::Value& value, bool* isSuccess);
 
 	static std::string IntToString(int value);
 	static int CalcWidth(cocos2d::Node* node, std::string& width, cocos2d::Node* parent);

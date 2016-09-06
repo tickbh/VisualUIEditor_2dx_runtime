@@ -55,6 +55,22 @@ cocos2d::Color3B UIUtils::CovertToColor(Json::Value& value, bool* isSuccess)
 	return ret;
 }
 
+cocos2d::Color4B UIUtils::CovertToColor4(Json::Value& value, bool* isSuccess)
+{
+	cocos2d::Color4B ret = cocos2d::Color4B::BLACK;
+	if (value.isNull() || value[0].isNull() || value[1].isNull() || value[2].isNull() || value[3].isNull()) {
+		if (isSuccess) { *isSuccess = false; }
+	}
+	else {
+		ret.r = value[0].asInt();
+		ret.g = value[1].asInt();
+		ret.b = value[2].asInt();
+		ret.a = value[3].asInt();
+		if (isSuccess) { *isSuccess = true; }
+	}
+	return ret;
+}
+
 std::string UIUtils::IntToString(int value)
 {
 	std::ostringstream out;
@@ -110,29 +126,29 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 		} else {
 			node = UILayer::create(data["path"].asString(), parent);
 		}
-	} else if (type == "Sprite") {
-		node = cocos2d::Sprite::create();
-	} else if (type == "Scale9") {
+	} else if (type == "UIImage") {
+		node = cocos2d::ui::ImageView::create();
+	} else if (type == "UIScale9") {
 		node = cocos2d::ui::Scale9Sprite::create();
-	} else if (type == "LabelTTF") {
-		node = cocos2d::LabelTTF::create();
-	} else if (type == "LabelAtlas") {
-		node = cocos2d::LabelAtlas::create();
-	} else if (type == "Input") {
-		auto spriteBg = data["spriteBg"].asString();
-		auto frame = GetSpriteFrameForName(spriteBg);
+	} else if (type == "UIText") {
+		node = cocos2d::ui::Text::create();
+	} else if (type == "UITextAtlas") {
+		node = cocos2d::ui::TextAtlas::create();
+	} else if (type == "UIInput") {
+		auto spriteFrame = data["spriteFrame"].asString();
+		auto frame = GetSpriteFrameForName(spriteFrame);
 		cocos2d::ui::EditBox* edBox;
 		if (!frame) {
 			edBox = cocos2d::ui::EditBox::create(cocos2d::Size(width, height), cocos2d::ui::Scale9Sprite::create());
 		} else {
-			edBox = cocos2d::ui::EditBox::create(cocos2d::Size(width, height), spriteBg, cocos2d::ui::Widget::TextureResType::PLIST);
+			edBox = cocos2d::ui::EditBox::create(cocos2d::Size(width, height), spriteFrame, cocos2d::ui::Widget::TextureResType::PLIST);
 		}
 		if (controlNode) {
 			edBox->setDelegate(new UIEditBoxDelegate(controlNode->GetEventListener(data["touchListener"].asString())));
 		}
 		node = edBox;
 		edBox->setFontSize(14);
-	} else if (type == "Slider") {
+	} else if (type == "UISlider") {
 		auto slider = cocos2d::ui::Slider::create();
 		slider->addEventListener([=](cocos2d::Ref*, cocos2d::ui::Slider::EventType event) {
 			auto callback = controlNode->GetEventListener(data["touchListener"].asString());
@@ -140,7 +156,7 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 			callback(uievent);
 		});
 		node = slider;
-	} else if (type == "CheckBox") {
+	} else if (type == "UICheckBox") {
 		auto checkbox = cocos2d::ui::CheckBox::create();
 		checkbox->addEventListener([=](cocos2d::Ref*, cocos2d::ui::CheckBox::EventType event) {
 			auto callback = controlNode->GetEventListener(data["touchListener"].asString());
@@ -151,7 +167,7 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 			callback(uievent);
 		});
 		node = checkbox;
-	} else if (type == "Button") {
+	} else if (type == "UIButton") {
 		auto button = cocos2d::ui::Button::create();
 		button->addTouchEventListener([=](cocos2d::Ref*, cocos2d::ui::Widget::TouchEventType event) {
 			auto callback = controlNode->GetEventListener(data["touchListener"].asString());
@@ -179,15 +195,24 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 
 	if (data["id"].isString()) { node->setName(data["id"].asString()); }
 	if (data["width"].isString() || data["height"].isString()) {
-		if (type == "Scale9") {
+		if (type == "UIScale9") {
 			dynamic_cast<cocos2d::ui::Scale9Sprite*>(node)->setPreferredSize(cocos2d::Size(width, height));
 		} else {
 			node->setContentSize(cocos2d::Size(width, height));
 		}
 	}
 
+	if (data["autoLayout"].isBool()) {
+		if (parent && node != parent) {
+			node->setContentSize(parent->getContentSize());
+		} else {
+			node->setContentSize(cocos2d::Director::getInstance()->getWinSize());
+		}
+	}
+
 	if (data["x"].isInt()) { node->setPositionX(data["x"].asInt()); };
 	if (data["y"].isInt()) { node->setPositionY(data["y"].asInt()); };
+
 	if (data["left"].isInt()) { node->setPositionX(data["left"].asInt()); };
 	if (data["right"].isInt() && parent) { node->setPositionX(parent->getContentSize().width - data["right"].asInt()); };
 	if (data["bottom"].isInt()) { node->setPositionY(data["bottom"].asInt()); };
@@ -216,19 +241,20 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 		node->setColor(color);
 	}
 
-	if (type == "LabelTTF") {
-		auto opnode = dynamic_cast<cocos2d::LabelTTF*>(node);
+	if (type == "UIText") {
+		auto opnode = dynamic_cast<cocos2d::ui::Text*>(node);
 		if (data["string"].isString()) { opnode->setString(data["string"].asString()); };
-		if (data["textAlign"].isInt()) { opnode->setHorizontalAlignment((cocos2d::TextHAlignment)data["textAlign"].asInt()); };
-		if (data["verticalAlign"].isInt()) { opnode->setVerticalAlignment((cocos2d::TextVAlignment)data["verticalAlign"].asInt()); };
+		if (data["textAlign"].isInt()) { opnode->setTextHorizontalAlignment((cocos2d::TextHAlignment)data["textAlign"].asInt()); };
+		if (data["verticalAlign"].isInt()) { opnode->setTextVerticalAlignment((cocos2d::TextVAlignment)data["verticalAlign"].asInt()); };
 		if (data["fontSize"].isInt()) { opnode->setFontSize(data["fontSize"].asInt()); };
 		if (data["fontName"].isString()) { opnode->setFontName(data["fontName"].asString()); };
-		color = CovertToColor(data["fillStyle"], &isSuccess);
-		if (isSuccess) { opnode->setFontFillColor(color); };
-		color = CovertToColor(data["strokeStyle"], &isSuccess);
-		if (isSuccess) { opnode->setFontFillColor(color); };
+		auto color4 = CovertToColor4(data["outlineColor"], &isSuccess);
+		if (isSuccess) { opnode->enableOutline(color4, data["outlineSize"].asInt()); };
+		if (data["boundingWidth"].isInt() || data["boundingHeight"].isInt()) {
+			opnode->setTextAreaSize(cocos2d::Size(data["boundingWidth"].asInt(), data["boundingWidth"].asInt()));
+		}
 	}
-	else if (type == "Input") {
+	else if (type == "UIInput") {
 		auto opnode = dynamic_cast<cocos2d::ui::EditBox*>(node);
 		if (data["string"].isString()) { opnode->setText(data["string"].asString().c_str()); };
 		if (data["fontSize"].isInt()) { opnode->setFontSize(data["fontSize"].asInt()); };
@@ -243,23 +269,13 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 		if (data["inputMode"].isInt()) { opnode->setInputMode((cocos2d::ui::EditBox::InputMode)data["inputMode"].asInt()); };
 		if (data["returnType"].isInt()) { opnode->setReturnType((cocos2d::ui::EditBox::KeyboardReturnType)data["returnType"].asInt()); };
 	}
-	else if (type == "Sprite") {
-		auto opnode = dynamic_cast<cocos2d::Sprite*>(node);
+	else if (type == "UIImage") {
+		auto opnode = dynamic_cast<cocos2d::ui::ImageView*>(node);
 		SetNodeSpriteFrame(data["spriteFrame"].asString(), [=](cocos2d::SpriteFrame* frame) {
-			opnode->setSpriteFrame(frame);
+			opnode->loadTexture(data["spriteFrame"].asString());
 		});
-
-		cocos2d::BlendFunc _blendFunc = opnode->getBlendFunc();
-		auto isChange = false;
-		if (data["blendSrc"].isInt()) {
-			_blendFunc.src = (GLenum)(data["blendSrc"].asInt());
-		}
-		if (data["blendDst"].isInt()) {
-			_blendFunc.dst = (GLenum)(data["blendDst"].asInt());
-		}
-		opnode->setBlendFunc(_blendFunc);
 	}
-	else if (type == "Scale9") {
+	else if (type == "UIScale9") {
 		auto opnode = dynamic_cast<cocos2d::ui::Scale9Sprite*>(node);
 		SetNodeSpriteFrame(data["spriteFrame"].asString(), [=](cocos2d::SpriteFrame* frame) {
 			opnode->setSpriteFrame(frame);
@@ -269,7 +285,7 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 			//--data.insetRight && (node.insetRight = data.insetRight);
 			//--data.insetBottom && (node.insetBottom = data.insetBottom);
 	}
-	else if (type == "Slider") {
+	else if (type == "UISlider") {
 		auto opnode = dynamic_cast<cocos2d::ui::Slider*>(node);
 		SetNodeBySpriteFrameName(data["barBg"].asString(), [=](const std::string& fileName, cocos2d::ui::Widget::TextureResType resType) {
 			opnode->loadBarTexture(fileName, resType);
@@ -290,7 +306,7 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 			opnode->setPercent(data["percent"].asInt());
 		}
 	}
-	else if (type == "Button") {
+	else if (type == "UIButton") {
 		auto opnode = dynamic_cast<cocos2d::ui::Button*>(node);
 
 		if (data["scale9Enable"].isBool()) { opnode->setScale9Enabled(data["scale9Enable"].asBool()); };
@@ -313,7 +329,7 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 		if (isSuccess) { opnode->setTitleColor(color); };
 
 	}
-	else if (type == "CheckBox") {
+	else if (type == "UICheckBox") {
 		auto opnode = dynamic_cast<cocos2d::ui::CheckBox*>(node);
 
 		if (data["select"].isBool()) { opnode->setSelected(data["select"].asBool()); };
@@ -334,16 +350,10 @@ cocos2d::Node* UIUtils::CocosGenBaseNodeByData(Json::Value& data, cocos2d::Node*
 			opnode->loadTextureFrontCrossDisabled(fileName, resType);
 		});
 	}
-	else if (type == "LabelAtlas") {
-		auto opnode = dynamic_cast<cocos2d::LabelAtlas*>(node);
+	else if (type == "UITextAtlas") {
+		auto opnode = dynamic_cast<cocos2d::ui::TextAtlas*>(node);
 		if (data["charMapFile"].isString() && cocos2d::FileUtils::getInstance()->isFileExist(data["charMapFile"].asString())) {
-			int mapStar = '0';
-			if (data["mapStartChar"].isInt()) {
-				mapStar = data["mapStartChar"].asInt();
-			} else {
-				mapStar += atoi(data["mapStartChar"].asString().c_str());
-			}
-			opnode->initWithString(data["string"].asString(), data["charMapFile"].asString(), data["itemWidth"].asInt(), data["itemHeight"].asInt(), mapStar);
+			opnode->setProperty(data["string"].asString(), data["charMapFile"].asString(), data["itemWidth"].asInt(), data["itemHeight"].asInt(), data["mapStartChar"].asString());
 		}
 	}
 
@@ -365,7 +375,7 @@ cocos2d::SpriteFrame* UIUtils::GetSpriteFrameForName(std::string name)
 	if (name.length() == 0) {
 		return nullptr;
 	}
-	auto frame = cocos2d::SpriteFrameCache::getInstance()->spriteFrameByName(name);
+	auto frame = cocos2d::SpriteFrameCache::getInstance()->getSpriteFrameByName(name);
 	if (frame) {
 		return frame;
 	}

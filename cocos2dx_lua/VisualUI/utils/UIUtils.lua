@@ -236,12 +236,11 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         local _ = data.verticalAlign and node:setTextVerticalAlignment(data.verticalAlign)
         local _ = data.fontSize and node:setFontSize(data.fontSize)
         local _ = data.fontName and node:setFontName(data.fontName)
-        local _ = data.string and node:setString(data.string)
-        color = CovertToColor(data.fillStyle)
-        local _ = color and node:setFontFillColor(color, true)
-        -- color = CovertToColor(data.strokeStyle)
-        -- local _ = color and node:setFontFillColor(color, true)
-
+        color = CovertToColor(data.outlineColor)
+        local _ = color and node:enableOutline(color, data.outlineSize || 1)
+        if data.boundingWidth or data.boundingHeight then
+            node:setTextAreaSize(cc.size(data.boundingWidth || 0, data.boundingHeight || 0))
+        end
     elseif data.type == "UIInput" then
 
         local _ = data.string and node:setText(data.string)
@@ -304,13 +303,7 @@ function CocosGenBaseNodeByData(data, parent, isSetParent, controlNode)
         local _ = data.enable and node:setTouchEnabled(data.enable)
     elseif data.type == "UITextAtlas" then
         if data.charMapFile and cc.FileUtils:getInstance():isFileExist(data.charMapFile) then
-            local mapStar = string.byte('0')
-            if type(data.mapStartChar) == "number" then
-                mapStar = data.mapStartChar
-            else
-                mapStar = string.byte(data.mapStartChar)
-            end
-            node:setProperty(data.string, data.charMapFile, data.itemWidth, data.itemHeight, mapStar)
+            node:setProperty(data.string, data.charMapFile, data.itemWidth, data.itemHeight, data.mapStartChar)
         end
     end
 
